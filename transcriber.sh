@@ -34,7 +34,7 @@ fi
 ###############################################################
 echo "File: $file"
 echo "Uploading..."
-id=$(curl -X POST -k $uploadURL -H 'Accept: application/json' -H "Authorization: Basic $AUTH" -H 'content-type: multipart/form-data' -F file=@$file  -F recognizer=ben 2>/dev/null | jq -r '.["id"]')
+id=$(curl -X POST -k $uploadURL -H 'Accept: application/json' -H "Authorization: Basic $AUTH" -H 'content-type: multipart/form-data' -F file="@$file"  -F recognizer=ben 2>/dev/null | jq -r '.["id"]')
 if [ $? -gt "0" ] ; then
    echo -e "${RED}FAILED $file\n\tCan't send file.${NC}"
    exit 1

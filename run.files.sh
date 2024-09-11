@@ -14,4 +14,4 @@ if (( $count == 0)) ; then
     echo "There is no files in $wav_path directory"; exit 1;
 fi
 
-ls -1 $wav_path | xargs -n1 -P6 ./transcriber.sh
+ls -1 $wav_path | sed 's| |\\ |g' | xargs -n1 -P6 ./transcriber.sh
