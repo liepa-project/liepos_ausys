@@ -8,9 +8,9 @@ Klientas transkribavimui. Tikrinta tik ant Ubuntu. Įrankis siunčia bylas į se
 
 * Parsisiųsti arba klonuoti šią repozitoriją
 * Pakeisti turinį bylos: `liepa_ausys.env`
-  * `liepa_ausys_url` - kur yra atpažinimo serveris
+  * `liepa_ausys_url` - kur yra nutlęs atpažinimo serveris
   * `liepa_ausys_auth` - prisijungimo detalės
-  * `liepa_ausys_wav_path` - nurodyti kur yra audio failai
+  * `liepa_ausys_wav_path` - nurodyti kur yra audio failai lokaliame kompiuteryje
  
 ### Transkribavimo pavyzdys
 
