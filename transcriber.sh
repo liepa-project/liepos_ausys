@@ -10,6 +10,10 @@
 ###############################################################
 file=$1
 ###############################################################
+source liepa_ausys.env
+AUTH=$liepa_ausys_auth
+url=$liepa_ausys_url
+###############################################################
 uploadURL="$url/transcriber/upload"
 statusURL="$url/status.service/status"
 resultURL="$url/result.service/result"
@@ -17,9 +21,6 @@ resultURL="$url/result.service/result"
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 NC='\033[0m' # No Color
-source liepa_ausys.env
-AUTH=$liepa_ausys_auth
-url=$liepa_ausys_url
 ###############################################################
 
 if [ -z "${liepa_ausys_auth}" ]; then
