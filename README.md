@@ -2,19 +2,19 @@
 
 Pagrindė info: https://github.com/airenas/list
 
-Klientas transcribavimui. Tikrinta tik ant Ubuntu. Įrankis siunčia bylas į serverį iš lokalaus kompiuterio disko. Po sėkmingo transkribavimo textinis failas yra sukuriamas toje pačioje direktorijoje kaip ir garsinis signalas.
+Klientas transkribavimui. Tikrinta tik ant Ubuntu. Įrankis siunčia bylas į serverį iš lokalaus kompiuterio disko. Po sėkmingo transkribavimo tekstinis failas yra sukuriamas toje pačioje direktorijoje kaip ir garsinis signalas.
 
 ## Naudojamas
 
-* Parsisiųsti arba klonuoti šią repositoriją
+* Parsisiųsti arba klonuoti šią repozitoriją
 * Pakeisti turinį bylos: `liepa_ausys.env`
   * `liepa_ausys_url` - kur yra atpažinimo serveris
   * `liepa_ausys_auth` - prisijungimo detalės
   * `liepa_ausys_wav_path` - nurodyti kur yra audio failai
  
-### Transcribavimo Pavizdys
+### Transkribavimo pavyzdys
 
-`liepa_ausys_wav_path` paliekame nustatymą: `wav/*.wav`. Į `wav` directoriją įkeliame `0.wav` bylą. Paleidžiam `./run.files.sh` skriptą. Jis nusiųs `0.wav` ir gavus atsakymą sukurs bylą `0.wav.txt`. Kurio turinys bus:
+`liepa_ausys_wav_path` paliekame nustatymą: `wav/*.wav`. Į `wav` direktoriją įkeliame `0.wav` bylą. Paleidžiam `./run.files.sh` skriptą. Jis nusiųs `0.wav` ir gavus atsakymą sukurs bylą `0.wav.txt`. Kurio turinys bus:
 
 ```
 # 1 S0000
