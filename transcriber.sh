@@ -7,8 +7,6 @@
 ### waits for the complete status
 ### the result is put into <input>.txt file
 ###############################################################
-### change the url to the correct one
-url=https://liepa.my.to/ausis/
 ###############################################################
 file=$1
 ###############################################################
