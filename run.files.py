@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 import os
 import fnmatch
-import sys
 import requests
 import time
 import logging
+import re
+
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -55,7 +56,7 @@ def transcription(wav_path):
         return
     total_processing_time_in_sec = sum(processing_time_per_status.values())
     logging.info(f"Processing  took seconds: {total_processing_time_in_sec} (Ratio {total_processing_time_in_sec/wav_length_in_sec}). Breakdown:{str(processing_time_per_status)}")
-    output_file_path = wav_path+".txt"
+    output_file_path = re.sub('wav$', 'lat', wav_path)
     # f = open(output_file_path, "w")
     with open(output_file_path, "w", encoding="utf-8") as f:
         logging.info(f"Wring result to {output_file_path}")
