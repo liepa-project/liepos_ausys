@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import os
 import fnmatch
 import sys
@@ -6,7 +7,7 @@ import time
 import logging
 
 # Configure logging
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 
 
@@ -20,30 +21,40 @@ def parse_env_file(file_path):
                 env_dict[key.strip()] = value.strip()
     return env_dict
 
+
 env_dict=parse_env_file("./liepa_ausys.env")
+liepa_ausys_processing_timeout_sec=3600 #1h
+liepa_ausys_processing_poll_sec=3 #1h
 
 def transcription(wav_path):
-    logging.info(f"Sound files: {wav_path}")
+    wav_length_in_sec=get_wav_file_length(wav_path)
+    logging.info(f"Sound files: {wav_path}. Length: {wav_length_in_sec} s")
+    if(wav_length_in_sec == 0):
+        logging.error("Error. File length is 0")
+        return
     transcription_id=send_file_to_server(wav_path)
     if(transcription_id == ""):
         logging.error("Error. Transcription ID not found")
         return
-    reg_result = 0
-    while_timeout = time.time() + 120
+    
+    while_timeout = time.time() + liepa_ausys_processing_timeout_sec
     transcription_status=""
-    perf={"Diarization":0,"ResultMake":0,"ResultMake":0, "COMPLETED":0, "Transcription":0}
+    processing_time_per_status={}#"Diarization":0,"ResultMake":0,"ResultMake":0, "COMPLETED":0, "Transcription":0
     while transcription_status != "COMPLETED" and time.time() < while_timeout:
-        time.sleep(1)
+        time.sleep(liepa_ausys_processing_poll_sec)
         transcription_status = check_transription_status(transcription_id)
         #print("transcription_status", transcription_status, transcription_status != "COMPLETED" )
-        perf[transcription_status]=perf[transcription_status]+1
-        print(" transcription_status: " + transcription_status + " " + str(perf[transcription_status]), end='\r' )
+        processing_time = processing_time_per_status.get(transcription_status, 0);
+        processing_time_per_status[transcription_status]=processing_time+liepa_ausys_processing_poll_sec
+        
+        print(" transcription_status: " + transcription_status + " " + str(processing_time_per_status[transcription_status]), end='\r' )
     transcription_lat=get_transription_lat(transcription_id)
     
     if(transcription_lat == ""):
         logging.error("Error. Transcription lat not found")
         return
-    logging.info("Peformance status in seconds:" + str(perf))
+    total_processing_time_in_sec = sum(processing_time_per_status.values())
+    logging.info(f"Processing  took seconds: {total_processing_time_in_sec} (Ratio {total_processing_time_in_sec/wav_length_in_sec}) .Breakdown:{str(processing_time_per_status)}")
     output_file_path = wav_path+".txt"
     f = open(output_file_path, "w")
     logging.info(f"Wring result to {output_file_path}")
@@ -51,7 +62,7 @@ def transcription(wav_path):
     f.close()
         
 
-def print_wav_files_in_directory(directory):
+def transcribe_wav_files_in_directory(directory):
     try:
         for entry in os.listdir(directory):
             full_path = os.path.join(directory, entry)
@@ -123,6 +134,19 @@ def get_transription_lat(transcription_id):
     return lat_text
         
 
+def get_wav_file_length(file_path):
+    with open(file_path, 'rb') as f:
+        # Read the header information
+        f.seek(24)  # Start of Sample Rate (byte 24)
+        sample_rate = int.from_bytes(f.read(4), 'little')
+
+        f.seek(40)  # Start of Data Subchunk size (byte 40)
+        data_size = int.from_bytes(f.read(4), 'little')
+
+        # WAV file length in seconds
+        length_seconds = data_size / (sample_rate * 2)  # Assuming 16-bit audio (2 bytes per sample)
+        return length_seconds
+
 
 if __name__ == "__main__":
     #directory = "./wav"
@@ -141,4 +165,4 @@ if __name__ == "__main__":
         logging.error("Error occured. Exiting...")
     else:
         directory = env_dict["liepa_ausys_wav_path"].replace("*.wav","")
-        print_wav_files_in_directory(directory)
+        transcribe_wav_files_in_directory(directory)
