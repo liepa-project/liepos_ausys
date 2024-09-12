@@ -54,12 +54,12 @@ def transcription(wav_path):
         logging.error("Error. Transcription lat not found")
         return
     total_processing_time_in_sec = sum(processing_time_per_status.values())
-    logging.info(f"Processing  took seconds: {total_processing_time_in_sec} (Ratio {total_processing_time_in_sec/wav_length_in_sec}) .Breakdown:{str(processing_time_per_status)}")
+    logging.info(f"Processing  took seconds: {total_processing_time_in_sec} (Ratio {total_processing_time_in_sec/wav_length_in_sec}). Breakdown:{str(processing_time_per_status)}")
     output_file_path = wav_path+".txt"
-    f = open(output_file_path, "w")
-    logging.info(f"Wring result to {output_file_path}")
-    f.write(transcription_lat)
-    f.close()
+    # f = open(output_file_path, "w")
+    with open(output_file_path, "w", encoding="utf-8") as f:
+        logging.info(f"Wring result to {output_file_path}")
+        f.write(transcription_lat)
         
 
 def transcribe_wav_files_in_directory(directory):
