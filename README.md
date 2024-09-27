@@ -24,3 +24,23 @@ Klientas transkribavimui. Tikrinta tik ant Ubuntu. Įrankis siunčia bylas į se
 1 1.29 2.34 pasistengs ,
 1 2.34 2.4 <eps>
 ```
+### Metrikų skaičavimas
+
+Žodžio klaidų atpažinimui:
+
+```
+./run.files.py && python ./bin/align_text.py
+```
+
+### Kiti įrankiai
+lat2audacity
+
+```
+python ./bin/lat2audacity.py ./wav/test.lat
+```
+
+### Kodo Testavimas
+Paleisti:
+```
+(cd ./bin/ && python test_*.py )
+```
