@@ -27,13 +27,14 @@ env_dict=parse_env_file("./liepa_ausys.env")
 liepa_ausys_processing_timeout_sec=3600 #1h
 liepa_ausys_processing_poll_sec=3 #1h
 
-def transcription(wav_path):
+def transcription(wav_path:str, ausis_url:str, ausis_headers:dict[str,str]):
+    """Orchestration procedure to send file to server, ping for statuses till result could be recieved"""
     wav_length_in_sec=get_wav_file_length(wav_path)
     logging.info(f"Sound files: {wav_path}. Length: {wav_length_in_sec} s")
     if(wav_length_in_sec == 0):
         logging.error("Error. File length is 0")
         return
-    transcription_id=send_file_to_server(wav_path)
+    transcription_id=send_file_to_server(wav_path, ausis_url, ausis_headers)
     if(transcription_id == ""):
         logging.error("Error. Transcription ID not found")
         return
@@ -43,13 +44,13 @@ def transcription(wav_path):
     processing_time_per_status={}#"Diarization":0,"ResultMake":0,"ResultMake":0, "COMPLETED":0, "Transcription":0
     while transcription_status != "COMPLETED" and time.time() < while_timeout:
         time.sleep(liepa_ausys_processing_poll_sec)
-        transcription_status = check_transription_status(transcription_id)
+        transcription_status = check_transription_status(transcription_id, ausis_url, ausis_headers)
         #print("transcription_status", transcription_status, transcription_status != "COMPLETED" )
         processing_time = processing_time_per_status.get(transcription_status, 0);
         processing_time_per_status[transcription_status]=processing_time+liepa_ausys_processing_poll_sec
         
         print(" transcription_status: " + transcription_status + " " + str(processing_time_per_status[transcription_status]), end='\r' )
-    transcription_lat=get_transription_lat(transcription_id)
+    transcription_lat=get_transription_lat(transcription_id, ausis_url, ausis_headers)
     
     if(transcription_lat == ""):
         logging.error("Error. Transcription lat not found")
@@ -63,28 +64,28 @@ def transcription(wav_path):
         f.write(transcription_lat)
         
 
-def transcribe_wav_files_in_directory(directory):
+def transcribe_wav_files_in_directory(directory:str, ausis_url:str, ausis_headers:dict[str,str]):
+    """ Iterate through dir to get transcriptions """
     try:
         for entry in os.listdir(directory):
             full_path = os.path.join(directory, entry)
             if os.path.isfile(full_path) and fnmatch.fnmatch(entry, "*.wav"):
-                transcription(full_path)
+                transcription(full_path, ausis_url, ausis_headers)
     except FileNotFoundError:
         logging.error(f"Error: Directory '{directory}' not found.")
     except PermissionError:
         logging.error(f"Error: Permission denied for accessing '{directory}'.")
 
-def send_file_to_server(file_path):
+def send_file_to_server(file_path:str, ausis_url:str, ausis_headers:dict[str,str]) -> str:
+    """ Send wav file to server """
     logging.debug("------------------- send_file_to_server -------------------")
-    url=env_dict["liepa_ausys_url"]
-    auth=env_dict["liepa_ausys_auth"]
+    
     with open(file_path, 'rb') as file:
         files = {'file': (file_path, file, 'multipart/form-data')}
         data = {'recognizer': "ben"}
-        headers = {'Authorization': f'Basic {auth}'}
-        send_url=url + "/transcriber/upload"
+        send_url=ausis_url + "/transcriber/upload"
         # logging.debug(f"Sending request to: {send_url} ")
-        response = requests.post(send_url, files=files, data=data, headers=headers)
+        response = requests.post(send_url, files=files, data=data, headers=ausis_headers)
         transcription_id=""
         if(response.ok):
             response_json = response.json()
@@ -96,14 +97,12 @@ def send_file_to_server(file_path):
         return transcription_id
 
 
-def check_transription_status(transcription_id):
+def check_transription_status(transcription_id:str, ausis_url:str, ausis_headers:dict[str,str]) -> str: 
+    """ping server to get status """
     logging.debug("------------------- check_transription_status -------------------")
-    url=env_dict["liepa_ausys_url"]
-    auth=env_dict["liepa_ausys_auth"]
-    headers = {'Authorization': f'Basic {auth}'}
-    status_url=url+"/status.service/status/"+transcription_id
+    status_url=ausis_url+"/status.service/status/"+transcription_id
     # print(f"Sending request to: {status_url} ")
-    response = requests.get(status_url,  headers=headers)
+    response = requests.get(status_url,  headers=ausis_headers)
     #print(f"Server response: {response.status_code}, {response.text}")
     error=""
     status="Failed"# default value
@@ -119,14 +118,14 @@ def check_transription_status(transcription_id):
         
     return status
 
-def get_transription_lat(transcription_id):
+
+
+def get_transription_lat(transcription_id:str, ausis_url:str, ausis_headers:dict[str,str]) -> str:
+    """ Retrieve lat file content """
     logging.debug("------------------- get_transription_lat -------------------")
-    url=env_dict["liepa_ausys_url"]
-    auth=env_dict["liepa_ausys_auth"]
-    headers = {'Authorization': f'Basic {auth}'}
-    lat_result_url=url+"/result.service/result/"+transcription_id+"/lat.restored.txt"
+    lat_result_url=ausis_url+"/result.service/result/"+transcription_id+"/lat.restored.txt"
     # logging.debug(f"Sending request to: {lat_result_url} ")
-    response = requests.get(lat_result_url,  headers=headers)
+    response = requests.get(lat_result_url,  headers=ausis_headers)
     lat_text=""
     if(response.ok):
         lat_text=response.text
@@ -135,7 +134,8 @@ def get_transription_lat(transcription_id):
     return lat_text
         
 
-def get_wav_file_length(file_path):
+def get_wav_file_length(file_path:str) -> float:
+    """ calcualte Wav file lenght in seconds"""
     with open(file_path, 'rb') as f:
         # Read the header information
         f.seek(24)  # Start of Sample Rate (byte 24)
@@ -159,11 +159,13 @@ if __name__ == "__main__":
     if env_dict["liepa_ausys_url"] == "":
         logging.info("liepa_ausys_url is not set in liepa_ausys.env")
         param_error=True
-    if env_dict["liepa_ausys_auth"] == "":
-        logging.info("liepa_ausys_auth is not set in liepa_ausys.env")
-        param_error=True
     if param_error:
         logging.error("Error occured. Exiting...")
     else:
         directory = env_dict["liepa_ausys_wav_path"].replace("*.wav","")
-        transcribe_wav_files_in_directory(directory)
+        ausis_url=env_dict["liepa_ausys_url"].rstrip("/")
+        auth=env_dict["liepa_ausys_auth"]
+        ausis_headers:dict[str,str]={}
+        if auth != None:
+            ausis_headers = {'Authorization': f'Basic {auth}'}
+        transcribe_wav_files_in_directory(directory, ausis_url, ausis_headers)
