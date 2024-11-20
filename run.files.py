@@ -5,6 +5,7 @@ import requests
 import time
 import logging
 import re
+import argparse
 
 
 # Configure logging
@@ -12,7 +13,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 
 
 
-def parse_env_file(file_path):
+def parse_env_file(file_path:str):
     env_dict = {}
     with open(file_path, 'r') as file:
         for line in file:
@@ -24,8 +25,13 @@ def parse_env_file(file_path):
 
 
 env_dict=parse_env_file("./liepa_ausys.env")
-liepa_ausys_processing_timeout_sec=3600 #1h
-liepa_ausys_processing_poll_sec=3 #1h
+liepa_ausys_processing_timeout_sec:int=86400 #1day
+liepa_ausys_processing_poll_sec:int=3 #1h
+# Instantiate the parser
+argparser = argparse.ArgumentParser(description='Semantika Ausis is client')
+# Optional positional argument
+argparser.add_argument('--url', type=str, nargs='+', 
+                    help='An optional url where env is')
 
 def transcription(wav_path:str, ausis_url:str, ausis_headers:dict[str,str]):
     """Orchestration procedure to send file to server, ping for statuses till result could be recieved"""
@@ -39,17 +45,20 @@ def transcription(wav_path:str, ausis_url:str, ausis_headers:dict[str,str]):
         logging.error("Error. Transcription ID not found")
         return
     
+    logging.debug("liepa_ausys_processing_timeout_sec: %s",liepa_ausys_processing_timeout_sec)
     while_timeout = time.time() + liepa_ausys_processing_timeout_sec
     transcription_status=""
     processing_time_per_status={}#"Diarization":0,"ResultMake":0,"ResultMake":0, "COMPLETED":0, "Transcription":0
-    while transcription_status != "COMPLETED" and time.time() < while_timeout:
+    while transcription_status != "COMPLETED":
         time.sleep(liepa_ausys_processing_poll_sec)
         transcription_status = check_transription_status(transcription_id, ausis_url, ausis_headers)
         #print("transcription_status", transcription_status, transcription_status != "COMPLETED" )
         processing_time = processing_time_per_status.get(transcription_status, 0);
         processing_time_per_status[transcription_status]=processing_time+liepa_ausys_processing_poll_sec
-        
-        print(" transcription_status: " + transcription_status + " " + str(processing_time_per_status[transcription_status]), end='\r' )
+        if time.time() > while_timeout:
+            logging.error(f"Error. Timeout it took more than {liepa_ausys_processing_timeout_sec} sec to complete the task. adjust `liepa_ausys_processing_timeout_sec` variable per your needs.")
+            raise Exception("Error: Server timeout")
+        print(" transcription_status: " + transcription_status + " " + str(processing_time_per_status[transcription_status]) +10*" ", end='\r' )
     transcription_lat=get_transription_lat(transcription_id, ausis_url, ausis_headers)
     
     if(transcription_lat == ""):
@@ -94,6 +103,7 @@ def send_file_to_server(file_path:str, ausis_url:str, ausis_headers:dict[str,str
             logging.info(f'transcription id:{transcription_id}')
         else:
             logging.error(f"Error: {response.status_code}, {response.text}")
+            raise Exception("Error from server!")
         return transcription_id
 
 
@@ -113,8 +123,9 @@ def check_transription_status(transcription_id:str, ausis_url:str, ausis_headers
         status=response_json["status"]
         if(error != ""):
             logging.error(f"Error: {error} during {status}")
+            raise Exception("Error from server!")
     else:
-        logging.debug(f"Error: Server response: {response.status_code}, {response.text}")
+        logging.error(f"Error: Server response: {response.status_code}, {response.text}")
         
     return status
 
@@ -131,6 +142,7 @@ def get_transription_lat(transcription_id:str, ausis_url:str, ausis_headers:dict
         lat_text=response.text
     else:
         logging.error(f"Server response: {response.status_code}, {response.text}")
+        raise Exception("Error from server!")
     return lat_text
         
 
@@ -150,20 +162,25 @@ def get_wav_file_length(file_path:str) -> float:
 
 
 if __name__ == "__main__":
-    #directory = "./wav"
-    # print(env_dict)
+    args = argparser.parse_args()
+    ausis_url=""
     param_error=False
     if env_dict["liepa_ausys_wav_path"] == "":
         logging.info("liepa_ausys_wav_path is not set in liepa_ausys.env")
         param_error=True
-    if env_dict["liepa_ausys_url"] == "":
+    if env_dict["liepa_ausys_url"] == "" and args.url == None:
         logging.info("liepa_ausys_url is not set in liepa_ausys.env")
         param_error=True
     if param_error:
         logging.error("Error occured. Exiting...")
     else:
         directory = env_dict["liepa_ausys_wav_path"].replace("*.wav","")
-        ausis_url=env_dict["liepa_ausys_url"].rstrip("/")
+        env_ausis_url=env_dict["liepa_ausys_url"]
+        liepa_ausys_processing_timeout_sec=int(env_dict.get("liepa_ausys_processing_timeout_sec",liepa_ausys_processing_timeout_sec))
+        ausis_url=args.url[0] if args.url != None else env_ausis_url
+        ausis_url=ausis_url.rstrip("/")
+        logging.info(f"ausis_url: {ausis_url}")
+
         auth=env_dict["liepa_ausys_auth"]
         ausis_headers:dict[str,str]={}
         if auth != None:
