@@ -61,7 +61,7 @@ def get_headers(ctx:ProcessingCtx):
 
 def transcription(wav_path:str, ctx:ProcessingCtx):
     """Orchestration procedure to send file to server, ping for statuses till result could be recieved"""
-    wav_length_in_sec=get_wav_file_length(wav_path)
+    wav_length_in_sec=get_audio_duration(wav_path)
     logging.info(f"Sound files: {wav_path}. Length: {wav_length_in_sec} s")
     if(wav_length_in_sec == 0):
         logging.error("Error. File length is 0")
@@ -95,6 +95,7 @@ def transcription(wav_path:str, ctx:ProcessingCtx):
 
 def transcribe_wav_files_in_directory(ctx:ProcessingCtx):
     """ Iterate through dir to get transcriptions """
+    logging.debug("------------------- transcribe_wav_files_in_directory -------------------")
     try:
         for entry in os.listdir(ctx.directory):
             full_path = os.path.join(ctx.directory, entry)
@@ -156,7 +157,7 @@ def save_transription_result( wav_path:str, result_name:str, result_ext:str,  tr
     transcription_lat=get_transription_lat(result_name, transcription_id, ctx)
     if(transcription_lat == ""):
         logging.error(f"Error. Transcription '{result_name}' not found")
-        return
+        return ""
     output_file_path = re.sub('wav$', result_ext, wav_path)
     # f = open(output_file_path, "w")
     with open(output_file_path, "w", encoding="utf-8") as f:
@@ -179,7 +180,7 @@ def get_transription_lat(result_name:str, transcription_id:str, ctx:ProcessingCt
     return lat_text
         
 
-def get_wav_file_length(file_path:str) -> float:
+def get_audio_duration(file_path:str) -> float:
     """ calcualte Wav file lenght in seconds"""
     with open(file_path, 'rb') as f:
         # Read the header information
@@ -218,8 +219,6 @@ if __name__ == "__main__":
         ctx.ausis_url=server_ausis_url.rstrip("/")
         logging.info(f"ausis_url: {ctx.ausis_url}")
         ctx.ext_eaf=args.ext_eaf
-        logging.info(f"ext_eaf: {ctx.ext_eaf}")
-        
 
         ctx.auth=env_dict["liepa_ausys_auth"]
         # if auth != None:
