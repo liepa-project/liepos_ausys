@@ -128,6 +128,7 @@ def get_transription_lat(result_name:str, transcription_id:str, ctx:ProcessingCt
         result_output = response.read().decode('utf-8')
     logging.debug("[get_transription_lat]predict result_output:\n %s \n---", result_output)
     lat_text="UNKOWN"
+    procesing_time_breakdown={}
     # Find the line containing "data:" and extract the JSON
     for line in result_output.splitlines():
         result_json_str = line.replace('data: ', '')
@@ -194,8 +195,9 @@ def transcribe_wav_files_in_directory(ctx:ProcessingCtx):
     logging.debug("------------------- transcribe_wav_files_in_directory -------------------")
     try:
         p = Path(ctx.directory)
-        for entry in os.listdir(p):
-            full_path = os.path.join(p, entry)
+        dir_path=p.parent
+        for entry in os.listdir(dir_path):
+            full_path = os.path.join(dir_path, entry)
             if os.path.isfile(full_path) and ( fnmatch.fnmatch(entry, "*.wav")): #fnmatch.fnmatch(entry, "*.mp3") or
                 logging.info("Processing: %s ", full_path)
                 transcription(full_path, ctx)
