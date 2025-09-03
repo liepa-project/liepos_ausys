@@ -238,7 +238,7 @@ if __name__ == "__main__":
         logging.info("liepa_ausys_wav_path is not set in liepa_ausys.env")
         param_error=True
     if env_dict["whisper_url"] == "":
-        logging.info("hf_url is not set in liepa_ausys.env")
+        logging.info("whisper_url is not set in liepa_ausys.env")
         param_error=True
     # if env_dict["whisper_model"] == "":
     #     logging.info("hf_model is not set in liepa_ausys.env")
